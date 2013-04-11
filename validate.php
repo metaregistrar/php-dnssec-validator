@@ -72,7 +72,7 @@ function validateDomain($domainname)
         $result = $dns->Query($domainname,'RRSIG');
         if ($result->getResourceResultCount()==0)
         {
-            throw new DnsException("No RRSIG records found on ".$ns." for domain name ".$domainname." - removed DNSSEC");
+            throw new DnsException("No RRSIG records found on ".$ns." for domain name ".$domainname);
         }
         else
         {
