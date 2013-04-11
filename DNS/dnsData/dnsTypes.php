@@ -73,6 +73,7 @@ class DNSTypes
         $this->AddType(255,"ANY");
         $this->AddType(32768,"TA");
         $this->AddType(32769,"DLV");
+        $this->AddType(65534,"TYPE65534"); // Eurid uses this one?
     }
 
     function GetByName($name)

@@ -1,21 +1,6 @@
 <?php
 include_once(dirname(__FILE__).'/DNS/dnsProtocol.php');
 
-if ($argc<=1)
-{
-    echo "Usage: validate <domainname>\n";
-    exit(-1);
-}
-$domainname = $argv[1];
-try
-{
-    validateDomain($domainname);
-    echo "$domainname dnssec validation succesful\n";
-}
-catch (DnsException $e)
-{
-    echo "ERROR: ".$e->getMessage()."\n";
-}
 
 function validateDomain($domainname)
 {

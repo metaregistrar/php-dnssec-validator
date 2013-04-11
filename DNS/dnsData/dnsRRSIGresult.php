@@ -17,6 +17,7 @@ class dnsRRSIGresult extends dnsResult
     
     public function __construct($type, $algorithm, $labels, $originalttl, $expiration, $inception, $keytag)
     {
+        date_default_timezone_set('UTC');
         $types = new DNSTypes();
         $this->setTypecovered($types->GetById($type));
         $this->setAlgorithm($algorithm);
