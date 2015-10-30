@@ -1,9 +1,32 @@
 <?php
-include_once('dnsData/dnsIncludes.php');
-include_once('dnsResponses/dnsIncludes.php');
+spl_autoload_register('autoload');
+
+function autoload($className) {
+    loadfile($className,'dnsData');
+    loadfile($className,'dnsResponses');
+}
+
+function loadfile($className, $directory) {
+    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        $delimiter = '\\';
+    } else {
+        $delimiter = '/';
+    }
+    if (strlen($directory)>0) {
+        $directory .= $delimiter;
+    }
+    $fileName = __DIR__ . $delimiter . $directory . $className . '.php';
+    //echo "Test autoload $fileName\n";
+    if (is_readable($fileName)) {
+        //echo "Autoloaded $fileName\n";
+        require($fileName);
+    }
+}
 
 class dnsProtocol
 {
+    private $header;
+    private $rawheader;
     private $rawbuffer;
      /**
      *
@@ -22,7 +45,7 @@ class dnsProtocol
     protected $server;
     /**
      *
-     * @var short $port=53 
+     * @var int $port=53
      */
     protected $port;
     /**
@@ -408,7 +431,7 @@ function nsec3hash($qname, $salt=null, $iterations='-')
 		$iterations--;
 	}
     while ($iterations >= 0);
-	return base32encode($toHash);
+	return $this->base32encode($toHash);
 }
 
 
