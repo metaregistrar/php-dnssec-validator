@@ -4,6 +4,7 @@ include_once(dirname(__FILE__).'/DNS/dnsProtocol.php');
 
 function validateDomain($domainname)
 {
+    $parentkeys = null;
     $domainname = strtolower($domainname);
     $dns = new dnsProtocol(false);
     $tld = substr($domainname,strpos($domainname,'.')+1);
@@ -21,6 +22,7 @@ function validateDomain($domainname)
             $ns = $result->getNameserverResults();
             foreach ($ns as $n)
             {
+                /* @var $n dnsNSresult */
                 $nameservers[]=$n->getNameserver();
             }
             $result = $dns->Query($domainname,'DS');
@@ -29,13 +31,14 @@ function validateDomain($domainname)
                 #
                 # No DS record found at parent: domain is not secured
                 #
-                return false;
+                throw new DnsException("No DS record found at parent: Domainname is not secured");
             }
             else
             {
                 $ds = $result->getResourceResults();
                 foreach ($ds as $d)
                 {
+                    /* @var $d dnsDSresult */
                     $pk['key']=$d->getKey();
                     $pk['keytag']=$d->getKeytag();
                     $pk['algorithm']=$d->getAlgorithm();
@@ -50,52 +53,57 @@ function validateDomain($domainname)
     #
     # Retrieve all necessary records
     #
-
-    foreach ($nameservers as $ns)
-    {
-        $dns->setServer($ns);
-        $result = $dns->Query($domainname,'RRSIG');
-        if ($result->getResourceResultCount()==0)
+    if (isset($nameservers) && is_array($nameservers)) {
+        foreach ($nameservers as $ns)
         {
-            throw new DnsException("No RRSIG records found on ".$ns." for domain name ".$domainname);
-        }
-        else
-        {
-            $rrsigs = $result->getResourceResults();
-            foreach ($rrsigs as $rrsig)
+            $dns->setServer($ns);
+            $result = $dns->Query($domainname,'RRSIG');
+            if ($result->getResourceResultCount()==0)
             {
-                if ($rrsig->getTypeCovered()=='SOA')
-                {
-                    $rr[$ns]=$rrsig;
+                throw new DnsException("No RRSIG records found on ".$ns." for domain name ".$domainname);
+            }
+            else
+            {
+                $rrsigs = $result->getResourceResults();
+                if (is_array($rrsigs)) {
+                    foreach ($rrsigs as $rrsig)
+                    {
+                        /* @var $rrsig dnsRRSIGresult */
+                        if ($rrsig->getTypeCovered()=='SOA')
+                        {
+                            $rr[$ns]=$rrsig;
+                        }
+                    }
                 }
             }
-        }
-        $result2 = $dns->Query($domainname,'DNSKEY');
-        if ($result2->getResourceResultCount()==0)
-        {
-            throw new DnsException("No DNSKEY records found on ".$ns." for domain name ".$domainname);
-        }
-        else
-        {
-            $ds = $result2->getResourceResults();
-            foreach ($ds as $childkey)
+            $result2 = $dns->Query($domainname,'DNSKEY');
+            if ($result2->getResourceResultCount()==0)
             {
-                if ($childkey->getSep())
+                throw new DnsException("No DNSKEY records found on ".$ns." for domain name ".$domainname);
+            }
+            else
+            {
+                $ds = $result2->getResourceResults();
+                foreach ($ds as $childkey)
                 {
-                    $dnskey[$ns]=$childkey;
+                    /* @var $childkey dnsDNSKEYresult */
+                    if ($childkey->getSep())
+                    {
+                        $dnskey[$ns]=$childkey;
+                    }
                 }
             }
+            if ((!isset($rr)) || (!$rr[$ns]))
+            {
+                throw new DnsException("No matching resource record type SOA found on ".$ns." for ".$domainname);
+            }
+            if ((!isset($dnskey)) || (!$dnskey[$ns]))
+            {
+                throw new DnsException("No matching DNSKEY record found with SEP flag enabled on ".$ns." for $domainname");
+            }
+            validateRRSIG($domainname, $rr[$ns], $ds);
+            validateDNSKEY($domainname, $dnskey[$ns], $parentkeys);
         }
-        if (!$rr[$ns])
-        {
-            throw new DnsException("No matching resource record type SOA found on ".$ns." for ".$domainname);
-        }
-        if (!$dnskey[$ns])
-        {
-            throw new DnsException("No matching DNSKEY record found with SEP flag enabled on ".$ns." for $domainname");
-        }
-        validateRRSIG($domainname, $rr[$ns], $ds);
-        validateDNSKEY($domainname, $dnskey[$ns], $parentkeys);
     }
     return true;
 }
@@ -120,7 +128,7 @@ function validateDNSKEY($domainname, dnsDNSKEYresult $dnskey, $parentkeys)
         }
         else
         {
-            $algo = $dns->algorithm($dnskey->getAlgorithm());
+            //$algo = $dnskey->algorithm($dnskey->getAlgorithm());
         }
 
     }
@@ -166,11 +174,14 @@ function validateRRSIG($domainname, dnsRRSIGresult $rrsig, $ds)
     # Keytag for signing must exist in the DNSKEY records
     #
     $keyfound = false;
-    foreach ($ds as $childkey)
-    {
-        if ($childkey->getKeytag()==$rrsig->getKeytag())
+    if (is_array($ds)) {
+        foreach ($ds as $childkey)
         {
-            $keyfound = true;
+            /* @var $childkey dnsRRSIGresult */
+            if ($childkey->getKeytag()==$rrsig->getKeytag())
+            {
+                $keyfound = true;
+            }
         }
     }
     if (!$keyfound)

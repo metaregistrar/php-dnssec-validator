@@ -10,7 +10,7 @@ Please feel free to test, use, add or modify.
 
 To use this suite: 
 - Clone this repository
-- php test.php <domainname>
+- php test.php domainname
 
 At this time it will only test .nl, .eu and .com domains because the nameservers are known for these extensions. Nameservers can be added for other extensions.
 See DNS/dnsProtocol.php function registrynameservers()
