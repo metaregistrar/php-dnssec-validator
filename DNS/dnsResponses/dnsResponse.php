@@ -258,7 +258,7 @@ namespace Metaregistrar\DNS {
                     $stuff = $this->ReadResponse($buffer, 18);
                     //$length = $ans_header['length'] - 18;
                     $test = unpack("ntype/calgorithm/clabels/Noriginalttl/Nexpiration/Ninception/nkeytag", $stuff);
-                    $result = new dnsRRSIGResult($test['type'], $test['algorithm'], $test['labels'], $test['originalttl'], $test['expiration'], $test['inception'], $test['keytag']);
+                    $result = new dnsRRSIGresult($test['type'], $test['algorithm'], $test['labels'], $test['originalttl'], $test['expiration'], $test['inception'], $test['keytag']);
                     $name = $this->ReadDomainLabel($buffer);
                     $result->setSignername($name);
                     $sig = $this->ReadResponse($buffer, $ans_header['length'] - (strlen($name) + 2) - 18);
