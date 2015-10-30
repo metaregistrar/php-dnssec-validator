@@ -244,7 +244,7 @@ namespace Metaregistrar\DNS {
                     $this->keytag2($stuff, $ans_header['length']);
                     $extras = unpack("nflags/Cprotocol/Calgorithm/a*pubkey", $stuff);
                     $flags = sprintf("%016b\n", $extras['flags']);
-                    $result = new dnsDNSKEYResult($extras['flags'], $extras['protocol'], $extras['algorithm'], $extras['pubkey']);
+                    $result = new dnsDNSKEYresult($extras['flags'], $extras['protocol'], $extras['algorithm'], $extras['pubkey']);
                     $result->setKeytag($this->keytag($stuff, $ans_header['length']));
                     if ($flags{7} == '1') {
                         $result->setZoneKey(true);
