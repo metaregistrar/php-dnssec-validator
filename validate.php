@@ -10,12 +10,12 @@ function validateDomain($domainname)
 {
     $parentkeys = null;
     $domainname = strtolower($domainname);
-    $dns = new dnsProtocol(false);
+    $dns = new Metaregistrar\DNS\dnsProtocol(false);
     $tld = substr($domainname,strpos($domainname,'.')+1);
     $dnsservers = $dns->registrynameservers($tld);
     if (!is_array($dnsservers))
     {
-        throw new DnsException("DNSSEC validation not supported yet for the domain name ".$domainname);
+        throw new Metaregistrar\DNS\DnsException("DNSSEC validation not supported yet for the domain name ".$domainname);
     }
     foreach ($dnsservers as $dnsserver)
     {
@@ -26,7 +26,7 @@ function validateDomain($domainname)
             $ns = $result->getNameserverResults();
             foreach ($ns as $n)
             {
-                /* @var $n dnsNSresult */
+                /* @var $n Metaregistrar\DNS\dnsNSresult */
                 $nameservers[]=$n->getNameserver();
             }
             $result = $dns->Query($domainname,'DS');
@@ -35,14 +35,14 @@ function validateDomain($domainname)
                 #
                 # No DS record found at parent: domain is not secured
                 #
-                throw new DnsException("No DS record found at parent: Domainname is not secured");
+                throw new Metaregistrar\DNS\DnsException("No DS record found at parent: Domainname is not secured");
             }
             else
             {
                 $ds = $result->getResourceResults();
                 foreach ($ds as $d)
                 {
-                    /* @var $d dnsDSresult */
+                    /* @var $d Metaregistrar\DNS\dnsDSresult */
                     $pk['key']=$d->getKey();
                     $pk['keytag']=$d->getKeytag();
                     $pk['algorithm']=$d->getAlgorithm();
@@ -64,7 +64,7 @@ function validateDomain($domainname)
             $result = $dns->Query($domainname,'RRSIG');
             if ($result->getResourceResultCount()==0)
             {
-                throw new DnsException("No RRSIG records found on ".$ns." for domain name ".$domainname);
+                throw new Metaregistrar\DNS\DnsException("No RRSIG records found on ".$ns." for domain name ".$domainname);
             }
             else
             {
@@ -72,7 +72,7 @@ function validateDomain($domainname)
                 if (is_array($rrsigs)) {
                     foreach ($rrsigs as $rrsig)
                     {
-                        /* @var $rrsig dnsRRSIGresult */
+                        /* @var $rrsig Metaregistrar\DNS\dnsRRSIGresult */
                         if ($rrsig->getTypeCovered()=='SOA')
                         {
                             $rr[$ns]=$rrsig;
@@ -83,14 +83,14 @@ function validateDomain($domainname)
             $result2 = $dns->Query($domainname,'DNSKEY');
             if ($result2->getResourceResultCount()==0)
             {
-                throw new DnsException("No DNSKEY records found on ".$ns." for domain name ".$domainname);
+                throw new Metaregistrar\DNS\DnsException("No DNSKEY records found on ".$ns." for domain name ".$domainname);
             }
             else
             {
                 $ds = $result2->getResourceResults();
                 foreach ($ds as $childkey)
                 {
-                    /* @var $childkey dnsDNSKEYresult */
+                    /* @var $childkey Metaregistrar\DNS\dnsDNSKEYresult */
                     if ($childkey->getSep())
                     {
                         $dnskey[$ns]=$childkey;
@@ -99,11 +99,11 @@ function validateDomain($domainname)
             }
             if ((!isset($rr)) || (!$rr[$ns]))
             {
-                throw new DnsException("No matching resource record type SOA found on ".$ns." for ".$domainname);
+                throw new Metaregistrar\DNS\DnsException("No matching resource record type SOA found on ".$ns." for ".$domainname);
             }
             if ((!isset($dnskey)) || (!$dnskey[$ns]))
             {
-                throw new DnsException("No matching DNSKEY record found with SEP flag enabled on ".$ns." for $domainname");
+                throw new Metaregistrar\DNS\DnsException("No matching DNSKEY record found with SEP flag enabled on ".$ns." for $domainname");
             }
             validateRRSIG($domainname, $rr[$ns], $ds);
             validateDNSKEY($domainname, $dnskey[$ns], $parentkeys);
@@ -113,7 +113,7 @@ function validateDomain($domainname)
 }
 
 
-function validateDNSKEY($domainname, dnsDNSKEYresult $dnskey, $parentkeys)
+function validateDNSKEY($domainname, Metaregistrar\DNS\dnsDNSKEYresult $dnskey, $parentkeys)
 {
     $validkeyfound = false;
     foreach ($parentkeys as $index=>$parentkey)
@@ -127,7 +127,7 @@ function validateDNSKEY($domainname, dnsDNSKEYresult $dnskey, $parentkeys)
             $parentkeys[$index]['matched']=true;
             if ($parentkey['algorithm']!=$dnskey->getAlgorithm())
             {
-                throw new DnsException("Parent ($parentkey[algorithm]) and child (".$dnskey->getAlgorithm().") algorithms for key ".$dnskey->getKeytag()." do not match for ".$domainname);
+                throw new Metaregistrar\DNS\DnsException("Parent ($parentkey[algorithm]) and child (".$dnskey->getAlgorithm().") algorithms for key ".$dnskey->getKeytag()." do not match for ".$domainname);
             }
         }
         else
@@ -140,17 +140,17 @@ function validateDNSKEY($domainname, dnsDNSKEYresult $dnskey, $parentkeys)
     {
         if (!$parentkey['matched'])
         {
-            throw new DnsException('No match found for parent key '.$parentkey['keytag']);
+            throw new Metaregistrar\DNS\DnsException('No match found for parent key '.$parentkey['keytag']);
         }
     }
     if (!$validkeyfound)
     {
-        throw new DnsException("No valid key with SEP found for domain name ".$domainname);
+        throw new Metaregistrar\DNS\DnsException("No valid key with SEP found for domain name ".$domainname);
     }
 }
 
 
-function validateRRSIG($domainname, dnsRRSIGresult $rrsig, $ds)
+function validateRRSIG($domainname, Metaregistrar\DNS\dnsRRSIGresult $rrsig, $ds)
 {
     #
     # Inception timestamp must lie in the past
@@ -158,21 +158,21 @@ function validateRRSIG($domainname, dnsRRSIGresult $rrsig, $ds)
     if ($rrsig->getInceptionTimestamp() > time())
     {
 
-        throw new DnsException("Key ".$rrsig->getKeytag()." for domain name ".$domainname." is not yet valid: starts on ".$rrsig->getInceptionDate());
+        throw new Metaregistrar\DNS\DnsException("Key ".$rrsig->getKeytag()." for domain name ".$domainname." is not yet valid: starts on ".$rrsig->getInceptionDate());
     }
     #
     # Expiration timestamp must lie in the future
     #
     if ($rrsig->getExpirationTimestamp() < time())
     {
-        throw new DnsException("Key ".$rrsig->getKeytag()." for domain name ".$domainname." has expired at ".$rrsig->getExpirationDate());
+        throw new Metaregistrar\DNS\DnsException("Key ".$rrsig->getKeytag()." for domain name ".$domainname." has expired at ".$rrsig->getExpirationDate());
     }
     #
     # Signer name must be equal to domain name
     #
     if ($rrsig->getSignername()!=$domainname)
     {
-        throw new DnsException("RRSIG signer name ".$rrsig->getSignername()." for domain name ".$domainname." is incorrect");
+        throw new Metaregistrar\DNS\DnsException("RRSIG signer name ".$rrsig->getSignername()." for domain name ".$domainname." is incorrect");
     }
     #
     # Keytag for signing must exist in the DNSKEY records
@@ -181,7 +181,7 @@ function validateRRSIG($domainname, dnsRRSIGresult $rrsig, $ds)
     if (is_array($ds)) {
         foreach ($ds as $childkey)
         {
-            /* @var $childkey dnsRRSIGresult */
+            /* @var $childkey Metaregistrar\DNS\dnsRRSIGresult */
             if ($childkey->getKeytag()==$rrsig->getKeytag())
             {
                 $keyfound = true;
@@ -190,6 +190,6 @@ function validateRRSIG($domainname, dnsRRSIGresult $rrsig, $ds)
     }
     if (!$keyfound)
     {
-        throw new DnsException("Keytag ".$rrsig->getKeytag()." cannot be found in the DNSKEY records for domain name ".$domainname." to validate RRSIG");
+        throw new Metaregistrar\DNS\DnsException("Keytag ".$rrsig->getKeytag()." cannot be found in the DNSKEY records for domain name ".$domainname." to validate RRSIG");
     }
 }

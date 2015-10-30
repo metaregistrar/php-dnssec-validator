@@ -1,6 +1,8 @@
 <?php
+namespace Metaregistrar\DNS {
+    class dnsException extends \Exception
+    {
 
-class dnsException extends Exception
-{
-
+    }
 }
+
