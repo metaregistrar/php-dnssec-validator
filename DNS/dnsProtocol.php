@@ -82,7 +82,7 @@ namespace Metaregistrar\DNS {
             $this->port=53;
             $this->timeout=60;
             $this->udp=false;
-            $this->types=new DNSTypes();
+            $this->types=new dnsTypes();
             set_error_handler(array($this,'error_handler'));
             $this->writelog("dnsProtocol Class Initialised");
         }
