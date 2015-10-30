@@ -1,6 +1,6 @@
 <?php
 namespace Metaregistrar\DNS {
-    class DNSTypes
+    class dnsTypes
     {
         var $types_by_id;
         var $types_by_name;
