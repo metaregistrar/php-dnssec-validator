@@ -1,0 +1,12 @@
+{
+  "name": "metaregistrar/php-dnssec-validator",
+  "description": "DNSSEC validation with only php required",
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "Ewout de Graaf",
+      "email": "ewout@metaregistrar.com"
+    }
+  ]
+}
