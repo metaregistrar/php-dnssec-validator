@@ -3,7 +3,7 @@
  * This function makes use of dnsProtocol class, which is able to retrieve DNS records from nameservers
  * With this information the function validateDomain is able to check if the DNSSEC information on a domain name is valid
  */
-include_once(dirname(__FILE__).'/DNS/dnsProtocol.php');
+include_once("vendor/autoload.php");
 
 
 function validateDomain($domainname)
